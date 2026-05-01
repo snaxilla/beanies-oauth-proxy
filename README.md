@@ -107,7 +107,7 @@ Health check / quick test
 
 Open this URL in a browser:
 
-https://beanies-auth.theledouxs.com/oauth/google/token
+https://beanies-auth.yourdomain.com/oauth/google/token
 
 A working deployment should return a JSON error such as:
 
