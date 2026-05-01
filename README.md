@@ -2,137 +2,208 @@
 
 A minimal self-hosted OAuth token proxy for [Beanies Family](https://github.com/gparker97/beanies-family).
 
-This side-car implements the Google OAuth token exchange and refresh endpoints needed for self-hosted Beanies deployments using Google Drive sync.
+This side-car service enables Google Drive sync for self-hosted Beanies deployments by securely handling OAuth token exchange and refresh operations.
 
-It is intended to be run as a separate lightweight service alongside a self-hosted Beanies frontend.
+---
 
-## What it does
+## 🚀 What this does
 
 This proxy exposes:
 
 - `POST /oauth/google/token`
 - `POST /oauth/google/refresh`
 
-It accepts requests from the Beanies frontend, forwards token exchange and refresh requests to Google's OAuth endpoint, and returns the response to the client.
+It receives requests from the Beanies frontend, securely exchanges OAuth codes with Google, and returns tokens to the client.
 
-## Why it exists
+---
 
-For self-hosted Beanies setups, the frontend cannot securely exchange Google OAuth authorization codes directly because that requires the Google client secret.
+## 🧠 Why this exists
 
-This proxy keeps the client secret on the server and performs the exchange safely.
+Beanies cannot safely perform OAuth token exchange directly in the browser because it requires a **client secret**.
 
-## Features
+This service keeps the client secret on the server and performs the exchange securely.
+
+---
+
+## ⚙️ Features
 
 - Minimal Node.js implementation
 - Docker-ready
-- Exact-origin CORS support
-- Google redirect URI allowlisting
-- Compatible with self-hosted Beanies deployments
-- Easy to run behind Dokploy, Traefik, Caddy, or Nginx
+- Exact-origin CORS enforcement
+- Google redirect URI validation
+- Designed for self-hosted Beanies deployments
+- Works with Dokploy, Traefik, Caddy, Nginx, etc.
 
-## Requirements
+---
 
-- A Google OAuth client
-- A Google OAuth client secret
-- A self-hosted Beanies frontend
-- A public HTTPS endpoint for this proxy
+## 📦 Requirements
 
-## Environment variables
+- Google OAuth client
+- Google OAuth client secret
+- Self-hosted Beanies frontend
+- Public HTTPS endpoint for this service
+
+---
+
+## 🔐 Environment Variables
 
 | Variable | Required | Description |
-|---|---|---|
-| `GOOGLE_CLIENT_SECRET` | Yes | Your Google OAuth client secret |
-| `CORS_ORIGIN` | Yes | Allowed frontend origin, e.g. `https://family.theledouxs.com` |
-| `PORT` | No | Server port, defaults to `3000` |
+|--------|----------|------------|
+| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
+| `CORS_ORIGIN` | Yes | Allowed frontend origin (your Beanies URL) |
+| `PORT` | No | Defaults to `3000` |
 
-## Example `.env`
+---
+
+## 📄 Example `.env`
 
 ```env
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-CORS_ORIGIN=https://yoursubdomain.yourdomain.com    (example - family.thejohnsons.com)
+CORS_ORIGIN=https://your-beanies-domain.com
 PORT=3000
-_____________________________________________________________________________________________________________________
+```
 
-Beanies frontend configuration
+---
 
-Set the following env vars in your Beanies frontend:
+# 🧱 Quick Setup (10 minutes)
 
-VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-VITE_OAUTH_PROXY_URL=https://beanies-auth.yourdomain.com
-______________________________________________________________________________
-If you want Google Picker support too:
+## 1. Clone the repo
 
-VITE_GOOGLE_API_KEY=your-google-api-key
-VITE_GOOGLE_PROJECT_NUMBER=your-google-project-number
-______________________________________________________________________________
+```bash
+git clone https://github.com/YOURUSER/beanies-oauth-proxy.git
+cd beanies-oauth-proxy
+```
 
-Google OAuth configuration
+---
 
-In Google Cloud Console, configure your OAuth client with:
+## 2. Build and run with Docker
 
-Authorized JavaScript origins
-https://your-subdomain.yourdomain.com
-http://localhost:5173
-
-Authorized redirect URIs
-https://your-subdomain.yourdomain.com/oauth/callback
-http://localhost:5173/oauth/callback
-______________________________________________________________________________
-Run locally
+```bash
 docker build -t beanies-oauth-proxy .
-docker run --rm -p 3000:3000 \
-  -e GOOGLE_CLIENT_SECRET=your-google-client-secret \
-  -e CORS_ORIGIN=https://yoursubdomain.yourdomain.com \
+docker run -d \
+  -p 3000:3000 \
+  -e GOOGLE_CLIENT_SECRET=your-secret \
+  -e CORS_ORIGIN=https://your-beanies-domain.com \
   beanies-oauth-proxy
+```
 
-Deploy with Dokploy
-Create a new application from this repo
-Expose port 3000
-Set these env vars:
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-CORS_ORIGIN=https://family.theledouxs.com
-PORT=3000
-______________________________________________________________________________
+---
 
-Attach a domain such as:
-https://beanies-auth.yourdomain.com
+## 3. Expose it with a domain
 
-In your Beanies frontend, set:
-VITE_OAUTH_PROXY_URL=https://beanies-auth.yourdomain.com
+Example:
 
-Rebuild the Beanies frontend
-______________________________________________________________________________
+```
+https://beanies-auth.your-domain.com
+```
 
-Health check / quick test
+Point your reverse proxy to port `3000`.
 
-Open this URL in a browser:
+---
 
-https://beanies-auth.yourdomain.com/oauth/google/token
+## 4. Configure Beanies frontend
 
-A working deployment should return a JSON error such as:
+Add this environment variable to your Beanies app:
 
+```env
+VITE_OAUTH_PROXY_URL=https://beanies-auth.your-domain.com
+```
+
+Rebuild the Beanies frontend after adding it.
+
+---
+
+## 5. Configure Google OAuth
+
+### Authorized JavaScript origins
+
+```
+https://your-beanies-domain.com
+http://localhost:5173
+```
+
+---
+
+### Authorized redirect URIs
+
+```
+https://your-beanies-domain.com/oauth/callback
+http://localhost:5173/oauth/callback
+```
+
+---
+
+## 🧪 Test the proxy
+
+Open:
+
+```
+https://beanies-auth.your-domain.com/oauth/google/token
+```
+
+Expected result:
+
+```json
 {"error":"method_not_allowed"}
+```
 
-That confirms the route exists and the proxy is running.
-______________________________________________________________________________
+That confirms the service is running correctly.
 
+---
 
-Notes
-This service does not store Beanies data
-This service does not replace Beanies storage or registry features
-It only handles Google OAuth code exchange and token refresh
-Your .beanpod data remains wherever your Beanies setup stores it
-Compatibility
+# 🧭 How it works
 
-This was built to support self-hosted Beanies deployments using the OAuth proxy contract documented in the upstream project.
+```
+Beanies frontend
+        ↓
+OAuth Proxy (this service)
+        ↓
+Google OAuth API
+```
 
-Credits
-Beanies Family
- by Greg Parker
+- Frontend requests token exchange
+- Proxy adds client secret
+- Google returns tokens
+- Frontend stores them securely
 
-This proxy was built as a minimal self-hosted companion service for Beanies by Snaxilla
+---
 
+# ⚠️ Notes
 
+- This service does **not store any user data**
+- This service does **not replace Beanies storage**
+- It only handles OAuth token exchange and refresh
+- Your `.beanpod` remains in your chosen storage location
 
+---
 
+# 🧩 Compatibility
 
+Tested with:
+
+- Self-hosted Beanies frontend
+- Docker deployments
+- Reverse proxies (Traefik, etc.)
+
+---
+
+# 📊 Status
+
+Working and stable for:
+
+- Google Drive sync
+- Self-hosted deployments
+- Multi-device use
+
+---
+
+# 📜 License
+
+MIT
+
+---
+
+# 🙏 Credits
+
+- [Beanies Family](https://github.com/gparker97/beanies-family) by Greg Parker
+- This project provides a minimal self-hosted companion service
